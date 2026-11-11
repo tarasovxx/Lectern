@@ -1,5 +1,5 @@
 SHELL := /bin/sh
-.PHONY: demo local gpu materials cloud stop logs config test
+.PHONY: demo local gpu materials cloud stop logs config test docs docs-build
 
 demo:
 	TRANSCRIPTION_BACKEND=demo GENERATE_MATERIALS=false docker compose up -d --build web
@@ -20,3 +20,9 @@ config:
 	docker compose --profile local --profile materials config --quiet
 test:
 	python3 scripts/test.py
+
+# Activate an environment with requirements-docs.txt before these commands.
+docs:
+	python3 -m mkdocs serve --dev-addr 127.0.0.1:8001
+docs-build:
+	python3 -m mkdocs build --strict

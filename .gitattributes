@@ -1,0 +1,2 @@
+# Archify output is generated and bound to its verification hashes.
+docs/assets/diagrams/*.html -whitespace linguist-generated=true

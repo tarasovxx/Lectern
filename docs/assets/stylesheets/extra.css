@@ -1,0 +1,4 @@
+/* Keep wide API tables and diagrams usable on narrow screens. */
+.md-typeset .mermaid { overflow-x: auto; }
+.md-typeset h1 { font-weight: 650; }
+.md-typeset .grid.cards > ul > li { border-radius: .4rem; }

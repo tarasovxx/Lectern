@@ -1,0 +1,84 @@
+site_name: LEctern
+site_description: Запуск, устройство и эксплуатация LEctern
+site_url: https://tarasovxx.github.io/Lectern/
+repo_url: https://github.com/tarasovxx/Lectern
+repo_name: LEctern
+edit_uri: ''
+strict: true
+theme:
+  name: material
+  language: ru
+  font: false
+  icon:
+    logo: material/book-open-page-variant
+  palette:
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Тёмная тема
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Светлая тема
+  features:
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+plugins:
+  - search:
+      lang: [ru, en]
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+extra_css:
+  - assets/stylesheets/extra.css
+nav:
+  - Обзор: index.md
+  - Начало работы:
+      - Первый запуск: quickstart.md
+      - Локальная обработка: guides/local.md
+      - Конспекты и тесты: guides/materials.md
+      - Работа с результатом: guides/report.md
+  - Устройство системы:
+      - Сервисы и связи: architecture/index.md
+      - Обработка записи: architecture/processing.md
+  - Справочник:
+      - Настройки: reference/configuration.md
+      - API: reference/api.md
+  - Эксплуатация:
+      - Данные и удаление: operations/data.md
+      - Решение проблем: operations/troubleshooting.md
+  - Разработка: development.md
+  - Подготовка пилота: pilot.md
+validation:
+  nav:
+    omitted_files: warn
+  links:
+    not_found: warn
+    unrecognized_links: warn
+    anchors: warn

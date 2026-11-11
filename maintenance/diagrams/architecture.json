@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "LEctern: режимы обработки записи",
+    "locale": "ru",
+    "output": "docs/assets/diagrams/architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/tarasovxx/Lectern.git",
+      "revision": "43b576bb2d5050e90d54bea0addbdc9fca280181",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Браузер",
+      "sublabel": "Преподаватель и ученик",
+      "pos": [
+        40,
+        240
+      ],
+      "size": [
+        165,
+        66
+      ],
+      "sources": [
+        {
+          "path": "services/web/backend/main.py",
+          "line": 65,
+          "end_line": 104
+        }
+      ]
+    },
+    {
+      "id": "web",
+      "type": "backend",
+      "label": "web",
+      "sublabel": "FastAPI · очередь asyncio",
+      "pos": [
+        410,
+        240
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "services/web/backend/pipeline.py",
+          "line": 1129,
+          "end_line": 1188
+        },
+        {
+          "path": "services/web/backend/queue_manager.py",
+          "line": 65,
+          "end_line": 102
+        },
+        {
+          "path": "services/web/backend/speech_service.py",
+          "line": 36,
+          "end_line": 46
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "SQLite",
+      "sublabel": "app.db · том web-data",
+      "pos": [
+        410,
+        40
+      ],
+      "size": [
+        200,
+        66
+      ],
+      "sources": [
+        {
+          "path": "services/web/backend/database.py",
+          "line": 18,
+          "end_line": 49
+        },
+        {
+          "path": "services/web/backend/database.py",
+          "line": 136,
+          "end_line": 180
+        },
+        {
+          "path": "compose.yaml",
+          "line": 7,
+          "end_line": 18
+        }
+      ]
+    },
+    {
+      "id": "demo",
+      "type": "database",
+      "label": "Демо JSON",
+      "sublabel": "Синтетический транскрипт",
+      "pos": [
+        40,
+        495
+      ],
+      "size": [
+        180,
+        66
+      ],
+      "sources": [
+        {
+          "path": "services/web/backend/pipeline.py",
+          "line": 1145,
+          "end_line": 1159
+        }
+      ]
+    },
+    {
+      "id": "speech",
+      "type": "backend",
+      "label": "speech · local",
+      "sublabel": "faster-whisper + pyannote",
+      "pos": [
+        410,
+        495
+      ],
+      "size": [
+        215,
+        76
+      ],
+      "sources": [
+        {
+          "path": "services/speech/app/main.py",
+          "line": 91,
+          "end_line": 117
+        },
+        {
+          "path": "services/speech/app/services/asr.py",
+          "line": 12,
+          "end_line": 36
+        },
+        {
+          "path": "services/speech/app/services/diarization.py",
+          "line": 13,
+          "end_line": 47
+        }
+      ]
+    },
+    {
+      "id": "ml",
+      "type": "backend",
+      "label": "ml · materials",
+      "sublabel": "FastAPI · очередь в памяти",
+      "pos": [
+        925,
+        240
+      ],
+      "size": [
+        210,
+        76
+      ],
+      "sources": [
+        {
+          "path": "services/ml/app/task_queue.py",
+          "line": 62,
+          "end_line": 101
+        },
+        {
+          "path": "services/ml/app/services/generation.py",
+          "line": 82,
+          "end_line": 149
+        },
+        {
+          "path": "services/ml/app/services/transcription.py",
+          "line": 44,
+          "end_line": 80
+        }
+      ]
+    },
+    {
+      "id": "localLlm",
+      "type": "external",
+      "label": "Локальная LLM",
+      "sublabel": "Отдельный HTTP-сервер",
+      "pos": [
+        925,
+        40
+      ],
+      "size": [
+        210,
+        66
+      ],
+      "sources": [
+        {
+          "path": "compose.yaml",
+          "line": 45,
+          "end_line": 57
+        },
+        {
+          "path": "services/ml/app/services/generation.py",
+          "line": 89,
+          "end_line": 116
+        }
+      ]
+    },
+    {
+      "id": "groq",
+      "type": "cloud",
+      "label": "Groq",
+      "sublabel": "Облачная транскрибация",
+      "pos": [
+        740,
+        495
+      ],
+      "size": [
+        190,
+        66
+      ],
+      "sources": [
+        {
+          "path": "compose.cloud.yaml",
+          "line": 1,
+          "end_line": 12
+        },
+        {
+          "path": "services/ml/app/services/transcription.py",
+          "line": 69,
+          "end_line": 80
+        }
+      ]
+    },
+    {
+      "id": "gemini",
+      "type": "cloud",
+      "label": "Gemini",
+      "sublabel": "Облачная генерация",
+      "pos": [
+        1045,
+        495
+      ],
+      "size": [
+        190,
+        66
+      ],
+      "sources": [
+        {
+          "path": "compose.cloud.yaml",
+          "line": 1,
+          "end_line": 12
+        },
+        {
+          "path": "services/ml/app/services/generation.py",
+          "line": 117,
+          "end_line": 149
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "browser-web",
+      "from": "browser",
+      "to": "web",
+      "label": "HTTP · UI и API",
+      "variant": "emphasis"
+    },
+    {
+      "id": "web-db",
+      "from": "web",
+      "to": "db",
+      "label": "SQL · состояние"
+    },
+    {
+      "id": "web-demo",
+      "from": "web",
+      "to": "demo",
+      "label": "demo · чтение JSON"
+    },
+    {
+      "id": "web-speech",
+      "from": "web",
+      "to": "speech",
+      "label": "local · HTTP /transcribe"
+    },
+    {
+      "id": "web-ml",
+      "from": "web",
+      "to": "ml",
+      "label": "cloud или материалы · HTTP"
+    },
+    {
+      "id": "ml-local",
+      "from": "ml",
+      "to": "localLlm",
+      "label": "LLM_TYPE=local"
+    },
+    {
+      "id": "ml-groq",
+      "from": "ml",
+      "to": "groq",
+      "label": "TRANSCRIBER_TYPE=groq"
+    },
+    {
+      "id": "ml-gemini",
+      "from": "ml",
+      "to": "gemini",
+      "label": "LLM_TYPE=gemini"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Выбор режима",
+      "items": [
+        "TRANSCRIPTION_BACKEND=demo: web читает готовый JSON; Compose запускает этот режим по умолчанию.",
+        "TRANSCRIPTION_BACKEND=local: web отправляет всю запись в speech; нужен профиль local.",
+        "TRANSCRIPTION_BACKEND=cloud: web делит аудио на части и отправляет их в ml. compose.cloud.yaml выбирает Groq и Gemini."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Материалы по условию",
+      "items": [
+        "GENERATE_MATERIALS=true: web передаёт транскрипт в ml для конспекта, теста и анализа; нужен профиль materials.",
+        "GENERATE_MATERIALS=false: web сохраняет транскрипт без генерации материалов. В локальном режиме ml не нужен.",
+        "LLM_TYPE=local: сервер LLM задаётся LOCAL_LLM_URL; он не входит в Compose. В базовом Compose используется qwen2.5:7b."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Владение данными",
+      "items": [
+        "web хранит состояние и результаты в SQLite; очередь запускается в процессе через asyncio и семафор. Входные файлы очереди лежат в data/queued_uploads.",
+        "speech: локальные Whisper и pyannote; /transcribe удаляет временную рабочую папку после ответа.",
+        "ml: две очереди asyncio и записи задач в памяти процесса; перезапуск теряет эти записи."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Границы карты",
+      "items": [
+        "Показаны основные режимы Compose. Дополнительные адаптеры ml (локальный Whisper API, Cloudflare Worker и R2) не развёрнуты на карте.",
+        "Стрелки обозначают вызов или чтение; ответы возвращаются вызывающему компоненту. Это карта ответственности, а не замер качества или скорости.",
+        "Узлы содержат ссылки на код, закреплённые за ревизией 43b576b. Интерфейс просмотрщика — на английском."
+      ]
+    }
+  ]
+}
