@@ -2,34 +2,38 @@
 
 ## Окружение приложения
 
-Для проверок приложения используйте Python 3.11 или 3.12. Из корня репозитория выполните:
+Нужен uv 0.13.6 или новее в серии 0.13. Корень использует Python 3.12; web и ml поддерживают Python 3.11–3.12, speech — Python 3.10–3.12. В корне файл .python-version выбирает Python 3.12. Из корня репозитория выполните:
 
 ```sh
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r requirements-dev.txt
+make sync
 make test
 make config
 ```
 
-Тесты запускаются без GPU и без скачивания моделей. Наборы web, ml и speech выполняются в разных процессах: два сервиса используют одинаковое имя Python-пакета app.
+Корень и три сервиса — независимые uv-проекты: у каждого свои pyproject.toml, uv.lock и .venv. `make sync` устанавливает только инструменты корня, включая HTTP-проверку. `make test` запускает scripts/test.py через uv и устанавливает зависимости каждого сервиса с группой dev в его окружение. Тесты выполняются без GPU и без скачивания моделей. Раздельные окружения также исключают конфликт пакетов app у ml и speech.
+
+После изменения зависимостей обновите все четыре lock-файла:
+
+```sh
+make lock
+make lock-check
+```
+
+`make lock-check` проверяет, что lock-файлы соответствуют pyproject.toml. Команды uv run используют --locked и завершаются ошибкой, если lock-файл нужно обновить.
 
 После запуска make demo доступна сквозная HTTP-проверка:
 
 ```sh
-python scripts/smoke.py
+uv run --locked python scripts/smoke.py
 ```
 
 Она проверяет страницу, загрузку, готовый транскрипт, аналитику и удаление. Ей нужен именно режим demo. Для другого порта задайте переменную LECTERN_URL, например http://127.0.0.1:8091.
 
 ## Документация
 
-Для сайта используйте отдельное окружение Python 3.12:
+Для сайта uv устанавливает группу docs в окружение корня:
 
 ```sh
-python3 -m venv .venv-docs
-. .venv-docs/bin/activate
-pip install -r requirements-docs.txt
 make docs
 ```
 
@@ -56,7 +60,11 @@ node ~/.codex/skills/archify/bin/archify.mjs finalize architecture \
 
 Workflow CPU checks запускает тесты, проверяет Compose, собирает web и ml и выполняет HTTP-сценарий демо. Он не собирает тяжёлые речевые образы и не измеряет качество распознавания.
 
-Workflow Documentation выполняет строгую сборку сайта и прикладывает архив lectern-docs к запуску GitHub Actions. Сам по себе этот workflow не публикует сайт в GitHub Pages.
+Workflow Documentation выполняет строгую сборку сайта и прикладывает архив lectern-docs к запуску GitHub Actions. Сам по себе этот workflow не публикует сайт в GitHub Pages. Для ручной публикации из корня репозитория:
+
+```sh
+uv run --locked --group docs mkdocs gh-deploy --strict
+```
 
 ## Структура репозитория
 

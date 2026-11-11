@@ -13,18 +13,15 @@ make demo
 
 Откройте [localhost:8090](http://localhost:8090). Демо использует синтетический транскрипт: содержимое загруженного файла не распознаётся.
 
-Для своей записи используйте [локальный режим](docs/guides/local.md). Поддержка NVIDIA GPU вынесена в отдельную конфигурацию.
+Для своей записи используйте [локальный режим](docs/guides/local.md). Для локального распознавания и генерации на NVIDIA GPU используйте `make gpu-materials`: [подготовка и запуск](docs/guides/materials.md).
 
 ## Документация
 
 [Начать с руководства](docs/index.md) · [Архитектура](docs/architecture/index.md) · [Настройки](docs/reference/configuration.md) · [API](docs/reference/api.md)
 
-Документация собрана на Material for MkDocs. Чтобы открыть её как сайт, создайте Python-окружение:
+Документация собрана на Material for MkDocs. Установите uv и запустите сайт:
 
 ```sh
-python3 -m venv .venv-docs
-. .venv-docs/bin/activate
-pip install -r requirements-docs.txt
 make docs
 ```
 

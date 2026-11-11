@@ -32,6 +32,21 @@ docker compose up -d --build
 
 Приложение будет доступно по адресу: `http://localhost:8090` (или другой порт, если он изменен в `docker-compose.yml`).
 
+## Локальная разработка
+
+Нужны uv и Python 3.11 или 3.12. Для запуска всего приложения используйте Docker Compose из корня проекта. Чтобы запустить веб отдельно, подготовьте .env в services/web и укажите доступные с хоста адреса сервисов:
+
+```bash
+cd services/web
+uv run --locked uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Uv использует pyproject.toml и uv.lock этого сервиса и создаёт отдельное окружение .venv. Запуск тестов из того же каталога:
+
+```bash
+uv run --locked --group dev pytest tests -q
+```
+
 ## Минимальные настройки .env
 
 Для работы в продакшене обязательно настройте:

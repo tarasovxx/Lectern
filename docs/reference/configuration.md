@@ -9,7 +9,8 @@
 | make demo | Синтетический пример, только web | Отключены |
 | make local | speech на CPU | Отключены |
 | make gpu | speech на NVIDIA GPU | Отключены |
-| make materials | speech на CPU | Локальный сервер модели через ml |
+| make materials | speech на CPU | Отдельный локальный сервер модели через ml |
+| make gpu-materials | speech на NVIDIA GPU | Контейнер Ollama на GPU через ml |
 | make cloud | Groq через ml | Gemini через ml |
 
 Команды Make явно задают режим веба. Например, make demo запускает демо даже при TRANSCRIPTION_BACKEND=local в .env. Перед сменой режима выполните make stop, чтобы не оставлять ненужные контейнеры.
@@ -24,8 +25,9 @@
 | HF_TOKEN | Пусто | Для загрузки моделей pyannote |
 | ASR_MODEL_NAME | large-v3-turbo | Для выбора модели Whisper |
 | ASR_COMPUTE_TYPE | int8 | CPU; GPU-конфигурация принудительно задаёт float16 |
-| LOCAL_LLM_URL | http://host.docker.internal:11434/v1 | Адрес локального API генерации |
-| LOCAL_LLM_MODEL | qwen2.5:7b | Имя установленной модели |
+| LOCAL_LLM_URL | http://host.docker.internal:11434/v1 | Адрес API для make materials; make gpu-materials задаёт http://ollama:11434/v1 |
+| LOCAL_LLM_MODEL | qwen2.5:7b | Имя модели; make gpu-materials скачивает её через ollama-init |
+| OLLAMA_CONTEXT_LENGTH | 8192 | Размер контекста в токенах для make gpu-materials; увеличение требует больше памяти |
 | GROQ_API_KEY | Пусто | Только облачный режим |
 | GEMINI_API_KEY | Пусто | Только облачный режим |
 | GEMINI_GENERATION_MODELS | Пусто | Идентификатор доступной модели Gemini; обязателен для make cloud |
@@ -48,3 +50,16 @@
 | MAX_FILE_SIZE_MB | 4000 | Лимит speech; веб отдельно ограничен 200 МБ |
 
 Эти значения заданы в compose.yaml. Для изменения полей, которые не подставляются из .env, нужен Compose override. Полный набор переменных отдельных сервисов шире корневой сборки.
+
+## Настройки GPU-генерации
+
+В compose.ollama.yaml сервис ml использует локальные режимы распознавания и генерации. Его запуск ждёт успешного завершения ollama-init. Контейнер Ollama получает GPU; API доступен внутри Compose на порту 11434.
+
+| Переменная Ollama | Значение | Результат |
+|---|---|---|
+| OLLAMA_NO_CLOUD | 1 | Облачные функции отключены |
+| OLLAMA_NUM_PARALLEL | 1 | Один запрос за раз |
+| OLLAMA_MAX_LOADED_MODELS | 1 | Одна модель в памяти |
+| OLLAMA_KEEP_ALIVE | 0 | Выгрузка модели после ответа |
+
+Поля этой таблицы меняются в compose.ollama.yaml. Речевые модели остаются в памяти speech; выгрузка модели Ollama не гарантирует, что следующая генерация поместится в видеопамять.

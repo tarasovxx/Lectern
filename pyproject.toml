@@ -1,0 +1,14 @@
+[project]
+name = "lectern"
+version = "0.1.0"
+description = "Development commands and documentation for LEctern"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = ["httpx==0.28.1"]
+docs = ["mkdocs-material==9.8.1", "mkdocs==1.6.1", "pymdown-extensions==13.1"]
+
+[tool.uv]
+package = false
+required-version = ">=0.13.6,<0.14"

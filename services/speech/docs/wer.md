@@ -17,8 +17,12 @@
 Запуск:
 
 ```bash
-python -m scripts.compute_wer --audio data/lecture.m4a --reference data/lecture.ru.srt
+uv run --locked --no-dev --extra cuda --extra metrics python -m scripts.compute_wer \
+    --audio data/lecture.m4a --reference data/lecture.ru.srt
 ```
+
+Команда выполняется из `services/speech`. Для Linux без GPU замените
+`--extra cuda` на `--extra cpu`. Установка описана в [README](../README.md).
 
 ### 2. Методика (зафиксирована)
 

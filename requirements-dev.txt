@@ -1,6 +1,0 @@
--r services/web/requirements.txt
--r services/ml/requirements.txt
-pytest==9.2.0
-pytest-asyncio==1.4.1.post1
-numpy>=1.26,<3
-python-docx>=1.1,<2

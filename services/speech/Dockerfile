@@ -1,10 +1,13 @@
 FROM python:3.11-slim-bookworm
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PARALLEL_GPU_STAGES=false HF_HOME=/models
+COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /uvx /usr/local/bin/
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PARALLEL_GPU_STAGES=false HF_HOME=/models \
+    UV_PYTHON_DOWNLOADS=never UV_LINK_MODE=copy PATH="/app/.venv/bin:$PATH"
+RUN test "$(uname -m)" = x86_64
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libsndfile1 && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY requirements-runtime.txt constraints-torch.txt ./
-RUN pip install --no-cache-dir torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cpu \
-    && pip install --no-cache-dir -c constraints-torch.txt -r requirements-runtime.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev --extra cpu --python /usr/local/bin/python3.11 \
+    && chmod -R a+rX /app/.venv
 COPY app ./app
 COPY configs ./configs
 RUN useradd --create-home speech && mkdir -p /models /app/data && chown -R speech:speech /models /app/data

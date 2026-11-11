@@ -1,20 +1,25 @@
 name: CPU checks
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v6
         with:
-          python-version: '3.11'
-          cache: pip
-      - run: pip install -r requirements-dev.txt
+          version: '0.13.6'
+          enable-cache: true
+          cache-dependency-glob: '**/uv.lock'
+      - run: make lock-check
+      - run: make sync
       - run: make test
       - run: docker compose --profile local --profile materials config --quiet
       - run: docker compose -f compose.yaml -f compose.gpu.yaml --profile local config --quiet
+      - run: docker compose -f compose.yaml -f compose.gpu.yaml -f compose.ollama.yaml --profile local --profile materials --profile ollama config --quiet
       - run: docker compose build web ml
       - run: make demo
-      - run: python scripts/smoke.py
+      - run: uv run --locked python scripts/smoke.py
       - if: always()
         run: docker compose --profile local --profile materials logs --tail=100
