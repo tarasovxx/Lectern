@@ -1,0 +1,235 @@
+"""Локальный бэкенд поверх ML-пайплайна из app/services.
+
+Требование куратора: локальный сервис на FastAPI, приём файла до 200 МБ.
+
+Решения, зафиксированные здесь:
+
+1. Файл пишется на диск потоком по 1 МБ, а не читается в память целиком —
+   200 МБ в RAM на каждый запрос кладут сервис при демо.
+2. Одна задача на GPU за раз (Semaphore). Видеокарта одна, второй прогон
+   не влезет рядом с загруженными моделями. Uvicorn — строго --workers 1.
+3. Модели грузятся один раз (ленивая инициализация пайплайна), а не в
+   каждом запросе, иначе каждый запрос заново поднимает веса на GPU.
+
+Пайплайн (AudioProcessingPipeline) синхронный и батчевый: обрабатывает
+файл целиком и возвращает JSON. Потоковая выдача по мере готовности —
+следующий шаг (пайплайн надо превратить в генератор), пока не сделана.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+import uuid
+import tempfile
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi.responses import JSONResponse, Response, StreamingResponse
+
+from app.services.streaming import stream_pipeline
+
+# Лимит размера загрузки — из .env, чтобы совпадал с config.py и чтобы
+# под видео (файлы в гигабайты) не пришлось лезть в код. dotenv грузим
+# мягко: без torch, чтобы модуль импортировался и на машине без GPU.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
+MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "4000"))
+MAX_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+CHUNK_BYTES = 1024 * 1024
+UPLOAD_DIR = Path("data/uploads")
+RESULT_DIR = Path("data/results")
+WORK_DIR = Path("data/work")
+
+gpu_lock = asyncio.Semaphore(1)
+jobs: dict[str, dict] = {}
+
+_pipeline = None
+
+
+def get_pipeline():
+    """Ленивая инициализация: torch/pyannote/whisper поднимаются один раз
+    при первом запросе. Импорт внутри функции, чтобы `import app.main`
+    работал на машине без GPU (для тестов и монтирования Gradio)."""
+    global _pipeline
+    if _pipeline is None:
+        from app.core.config import load_settings
+        from app.services.pipeline import AudioProcessingPipeline
+
+        _pipeline = AudioProcessingPipeline(load_settings())
+    return _pipeline
+
+
+app = FastAPI(title="yadrovichi")
+
+
+async def save_upload(upload: UploadFile, directory: Path | None = None) -> Path:
+    """Потоковая запись на диск с проверкой размера по ходу."""
+    directory = directory or UPLOAD_DIR
+    directory.mkdir(parents=True, exist_ok=True)
+    suffix = Path(upload.filename or "audio").suffix or ".mp3"
+    dst = directory / f"{uuid.uuid4().hex}{suffix}"
+
+    written = 0
+    with dst.open("wb") as fh:
+        while chunk := await upload.read(CHUNK_BYTES):
+            written += len(chunk)
+            if written > MAX_BYTES:
+                fh.close()
+                dst.unlink(missing_ok=True)
+                raise HTTPException(413, f"Файл больше {MAX_BYTES // 1024 // 1024} МБ")
+            fh.write(chunk)
+    return dst
+
+
+@app.post("/transcribe")
+async def transcribe(file: UploadFile):
+    """Приём файла -> обработка -> итоговый JSON с таймлайном и ролями."""
+    WORK_DIR.mkdir(parents=True, exist_ok=True)
+    # The web service owns retained results. No job history or recording remains here.
+    with tempfile.TemporaryDirectory(prefix="request-", dir=WORK_DIR) as directory:
+        workspace = Path(directory)
+        try:
+            src = await save_upload(file, workspace)
+            async with gpu_lock:
+                def process():
+                    from app.services.analytics import compute_analytics
+
+                    result = get_pipeline().process(src, work_dir=workspace)
+                    result["analytics"] = compute_analytics(result)
+                    return result
+
+                task = asyncio.create_task(asyncio.to_thread(process))
+                try:
+                    result = await asyncio.shield(task)
+                except asyncio.CancelledError:
+                    # A worker thread cannot be cancelled. Wait before removing its files.
+                    await task
+                    raise
+            return JSONResponse(result)
+        finally:
+            await file.close()
+
+
+@app.post("/stream")
+async def stream(file: UploadFile):
+    """Потоковая выдача: реплики с ролями отдаются по мере готовности (NDJSON).
+
+    Каждая строка ответа — отдельный JSON: meta, потом utterance по одной,
+    потом done. Клиент рисует их вживую, не дожидаясь конца обработки.
+    """
+    src = await save_upload(file)
+
+    async def gen():
+        loop = asyncio.get_running_loop()
+        async with gpu_lock:
+            iterator = await loop.run_in_executor(
+                None, lambda: iter(stream_pipeline(get_pipeline(), src, WORK_DIR))
+            )
+            while True:
+                item = await loop.run_in_executor(None, lambda: next(iterator, None))
+                if item is None:
+                    break
+                yield json.dumps(item, ensure_ascii=False) + "\n"
+
+    return StreamingResponse(gen(), media_type="application/x-ndjson")
+
+
+@app.get("/jobs/{job_id}")
+async def job_status(job_id: str):
+    if job_id not in jobs:
+        raise HTTPException(404, "Задача не найдена")
+    return jobs[job_id]
+
+
+@app.get("/result/{job_id}")
+async def result(job_id: str):
+    """Сохранённый JSON — для скачивания и для метрик."""
+    path = RESULT_DIR / f"{job_id}.json"
+    if not path.exists():
+        raise HTTPException(404, "Результат не найден")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+@app.get("/analytics/{job_id}")
+async def analytics(job_id: str, bucket_seconds: float = 60.0):
+    """Аналитика вовлечённости по сохранённому результату: доли речи по
+    ролям и спикерам, интерактивность, лента доминирования по корзинам."""
+    from app.services.analytics import compute_analytics
+
+    path = RESULT_DIR / f"{job_id}.json"
+    if not path.exists():
+        raise HTTPException(404, "Результат не найден")
+    result = json.loads(path.read_text(encoding="utf-8"))
+    return compute_analytics(result, ribbon_bucket_seconds=bucket_seconds)
+
+
+@app.get("/export/{job_id}")
+async def export_transcript(job_id: str, format: str = "srt"):
+    """Экспорт расшифровки: ?format=srt|vtt|txt|docx."""
+    path = RESULT_DIR / f"{job_id}.json"
+    if not path.exists():
+        raise HTTPException(404, "Результат не найден")
+    timeline = json.loads(path.read_text(encoding="utf-8")).get("timeline", [])
+
+    fmt = format.lower()
+    if fmt == "srt":
+        from app.services.export_subs import to_srt
+
+        body, media = to_srt(timeline), "application/x-subrip"
+    elif fmt == "vtt":
+        from app.services.export_subs import to_vtt
+
+        body, media = to_vtt(timeline), "text/vtt"
+    elif fmt == "txt":
+        from app.services.export_transcript import to_txt
+
+        body, media = to_txt(timeline), "text/plain; charset=utf-8"
+    elif fmt == "docx":
+        from app.services.export_transcript import docx_bytes
+
+        body = docx_bytes(timeline)
+        media = (
+            "application/vnd.openxmlformats-officedocument."
+            "wordprocessingml.document"
+        )
+    else:
+        raise HTTPException(400, "format: srt, vtt, txt или docx")
+
+    return Response(
+        content=body,
+        media_type=media,
+        headers={
+            "Content-Disposition": f'attachment; filename="{job_id}.{fmt}"'
+        },
+    )
+
+
+@app.get("/health")
+async def health():
+    return {
+        "status": "ok",
+        "backend": "local",
+        "models_loaded": _pipeline is not None,
+        "readiness": "lazy_models_require_first_request",
+        "hf_token_configured": bool(os.getenv("HF_TOKEN")),
+        "queued": sum(job["status"] == "queued" for job in jobs.values()),
+    }
+
+
+# Gradio монтируется в это же приложение: /docs — API, /ui — интерфейс.
+# Импорт мягкий: без gradio API всё равно поднимается.
+try:
+    import gradio as gr
+
+    from app.ui import demo
+
+    app = gr.mount_gradio_app(app, demo, path="/ui")
+except ImportError:
+    pass

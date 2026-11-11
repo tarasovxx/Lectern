@@ -1,0 +1,43 @@
+{
+  "synthetic": true,
+  "timeline": [
+    {
+      "start": 0,
+      "end": 5,
+      "source_speaker": "S0",
+      "speaker_id": 0,
+      "role": "teacher",
+      "display_name": "Преподаватель (демо)",
+      "text": "Это синтетический пример. Загруженная запись не распознаётся в деморежиме."
+    },
+    {
+      "start": 5,
+      "end": 8,
+      "source_speaker": "S1",
+      "speaker_id": 1,
+      "role": "student",
+      "display_name": "Ученик (демо)",
+      "text": "Это демонстрационный ответ ученика."
+    }
+  ],
+  "analytics": {
+    "lesson_duration_seconds": 8,
+    "speakers": [
+      {
+        "speaker": "S0",
+        "display_name": "Преподаватель (демо)",
+        "role": "teacher",
+        "talk_seconds": 5
+      },
+      {
+        "speaker": "S1",
+        "display_name": "Ученик (демо)",
+        "role": "student",
+        "talk_seconds": 3
+      }
+    ]
+  },
+  "role_detection": {
+    "low_confidence": true
+  }
+}

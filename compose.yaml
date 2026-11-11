@@ -1,0 +1,61 @@
+name: lectern
+services:
+  web:
+    build: ./services/web
+    ports:
+      - "127.0.0.1:${PORT:-8090}:8090"
+    environment:
+      PORT: 8090
+      DB_PATH: /app/data/app.db
+      SESSION_SECRET: ${SESSION_SECRET:-lectern-local-development-only}
+      TRANSCRIPTION_BACKEND: ${TRANSCRIPTION_BACKEND:-demo}
+      GENERATE_MATERIALS: ${GENERATE_MATERIALS:-false}
+      SPEECH_URL: http://speech:8000
+      ML_URL: http://ml:8000
+      ML_API_KEY: ${ML_API_KEY:-lectern-internal-local-key}
+      MAX_CONCURRENT_GENERATIONS: 1
+    volumes:
+      - web-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8090/api/me')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  speech:
+    platform: linux/amd64
+    profiles: [local]
+    build: ./services/speech
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+      ASR_MODEL_NAME: ${ASR_MODEL_NAME:-large-v3-turbo}
+      ASR_COMPUTE_TYPE: ${ASR_COMPUTE_TYPE:-int8}
+      ASR_LANGUAGE: ru
+      PARALLEL_GPU_STAGES: 'false'
+      MAX_FILE_SIZE_MB: 4000
+      USE_CHECKPOINTS: 'false'
+    volumes:
+      - model-cache:/models
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  ml:
+    profiles: [materials]
+    build: ./services/ml
+    environment:
+      API_KEY: ${ML_API_KEY:-lectern-internal-local-key}
+      TRANSCRIBER_TYPE: local
+      LLM_TYPE: local
+      LOCAL_LLM_URL: ${LOCAL_LLM_URL:-http://host.docker.internal:11434/v1}
+      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen2.5:7b}
+      TRANSCRIBE_WORKERS: 1
+      ANALYSIS_WORKERS: 1
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+volumes:
+  web-data:
+  model-cache:

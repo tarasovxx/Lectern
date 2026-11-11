@@ -1,0 +1,12 @@
+services:
+  web:
+    environment:
+      TRANSCRIPTION_BACKEND: cloud
+      GENERATE_MATERIALS: 'true'
+  ml:
+    environment:
+      TRANSCRIBER_TYPE: groq
+      LLM_TYPE: gemini
+      GROQ_API_KEY: ${GROQ_API_KEY:?Set GROQ_API_KEY in .env for cloud mode}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env for cloud mode}
+      GEMINI_GENERATION_MODELS: ${GEMINI_GENERATION_MODELS:?Set a Gemini model ID available to your account}

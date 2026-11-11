@@ -1,0 +1,20 @@
+[
+  {
+    "repository": "https://github.com/ArseniyKvasov/AdaptiveEducationWeb",
+    "revision": "4659b7f2cc8b69bd040f04bf834fe4dabf2ca5bf",
+    "directory": "services/web",
+    "license": "No LICENSE supplied upstream; reuse authorized by repository owner in this conversation."
+  },
+  {
+    "repository": "https://github.com/ArseniyKvasov/AdaptiveEducationML",
+    "revision": "d8d2583efa03ba5798063e89d774febb5fb43f31",
+    "directory": "services/ml",
+    "license": "No LICENSE supplied upstream; reuse authorized by repository owner in this conversation."
+  },
+  {
+    "repository": "https://github.com/suharkom/yadrovichi",
+    "revision": "a50ada6e29d27d56542376a2e7c0d13f668db5a6",
+    "directory": "services/speech",
+    "license": "No LICENSE supplied upstream; reuse authorized by repository owner in this conversation."
+  }
+]

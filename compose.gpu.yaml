@@ -1,0 +1,8 @@
+services:
+  speech:
+    build:
+      context: ./services/speech
+      dockerfile: Dockerfile.gpu
+    gpus: all
+    environment:
+      ASR_COMPUTE_TYPE: float16
