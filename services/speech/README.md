@@ -48,7 +48,7 @@
 - Устойчивость к **0 OOM** на общей карте (offload pyannote + один воркер).
 - Расхождение нашей транскрипции со встроенной ASR Контур Толк — **~33%**,
   качественно в нашу пользу (см. [docs/wer.md](docs/wer.md)).
-- **51 юнит-тест** (без GPU) — зелёные.
+- **55 юнит-тестов** без загрузки моделей.
 
 ## Фичи интерфейса (`/ui`)
 
@@ -73,34 +73,60 @@
 
 ## Установка
 
-Нужен **ffmpeg** в PATH.
+Команды выполняются из `services/speech`. Нужен uv 0.13.6 и Python 3.10–3.12.
+Для распознавания поддерживается Linux x86_64 с glibc ≥ 2.28, ffmpeg и
+libsndfile. Веса pyannote требуют HF_TOKEN и принятия условий модели.
+
+Для API и тестов достаточно базовых зависимостей. Torch, pyannote и Whisper
+устанавливаются только с одним из дополнений: `cpu` или `cuda` (CUDA 12.8).
+Они несовместимы друг с другом. Gradio подключается дополнением `ui`, jiwer —
+дополнением `metrics`. При каждом `uv run` указывайте нужные дополнения:
+uv синхронизирует окружение перед запуском.
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
-pip install -r requirements.txt
-cp .env.example .env      # вписать HF_TOKEN, принять условия на pyannote/*
-python -c "import torch; print(torch.cuda.get_device_capability(0))"   # (8, 6)
+# Тесты без моделей, в том числе на macOS
+uv sync --locked --group dev
+uv run --locked --group dev python -m pytest tests -q
+
+# На сервере с NVIDIA GPU
+uv sync --locked --no-dev --extra cuda --python 3.10
+cp .env.example .env      # вписать HF_TOKEN
+uv run --locked --no-dev --extra cuda python -c "import torch; print(torch.cuda.get_device_capability(0))"
+
+# На Linux без GPU
+uv sync --locked --no-dev --extra cpu --python 3.11
 ```
 
 ## Запуск
 
 ```bash
 # Прогон пайплайна на файле → JSON с таймлайном, ролями и RTF
-python -m scripts.smoke data/lesson.mp4
+uv run --locked --no-dev --extra cuda python -m scripts.smoke data/lesson.mp4
 
 # Сервис: /docs — API, /ui — интерфейс. Один воркер: видеокарта одна.
-PARALLEL_GPU_STAGES=false uvicorn app.main:app --workers 1 --port 8000
+PARALLEL_GPU_STAGES=false uv run --locked --no-dev --extra cuda --extra ui \
+    uvicorn app.main:app --workers 1 --port 8000
 
 # Аналитика вовлечённости по готовому результату (без GPU)
-python -m scripts.analyze artifacts/ml_result.json --output artifacts/analytics.json
+uv run --locked --no-dev python -m scripts.analyze artifacts/ml_result.json --output artifacts/analytics.json
 
 # WER: против человеческого эталона (аудио + субтитры) и расхождение с Толком
-python -m scripts.compute_wer --audio data/lecture.m4a --reference data/lecture.ru.srt
-python -m scripts.wer_vs_talk --ours artifacts/ml_result.json --talk "Транскрибация толк.docx"
+uv run --locked --no-dev --extra cuda --extra metrics python -m scripts.compute_wer \
+    --audio data/lecture.m4a --reference data/lecture.ru.srt
+uv run --locked --no-dev --extra metrics python -m scripts.wer_vs_talk \
+    --ours artifacts/ml_result.json --talk "Транскрибация толк.docx"
 
 # Юнит-тесты (без GPU)
-python -m pytest tests/ -q
+uv run --locked --group dev python -m pytest tests -q
+```
+
+Для CPU замените `--extra cuda` на `--extra cpu`. Контейнеры используют тот же
+lock: Dockerfile — Python 3.11 и CPU, Dockerfile.gpu — Python 3.10 и CUDA 12.8.
+Оба образа собираются для `linux/amd64`; Gradio и метрики в них не включены.
+
+```bash
+docker build --platform linux/amd64 -t lectern-speech:cpu .
+docker build --platform linux/amd64 -f Dockerfile.gpu -t lectern-speech:cuda .
 ```
 
 ## Рабочий процесс на сервере (деплой)
@@ -114,7 +140,8 @@ scp "C:\путь\запись.mp4" yadrovic@<сервер>:~/yadrovichi/data/les
 # 2. Обновить код и перезапустить сервис — на сервере
 pkill -u yadrovic -f uvicorn
 cd ~/yadrovichi && git pull
-PARALLEL_GPU_STAGES=false nohup uvicorn app.main:app --workers 1 --port 8000 \
+PARALLEL_GPU_STAGES=false nohup uv run --locked --no-dev --extra cuda --extra ui \
+    uvicorn app.main:app --workers 1 --port 8000 \
     > ~/uvicorn.log 2>&1 & sleep 4 && tail -5 ~/uvicorn.log   # ждём Application startup complete
 
 # 3. Открыть интерфейс с ПК — проброс порта в отдельном окне (не закрывать)

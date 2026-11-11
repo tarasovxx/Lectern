@@ -72,11 +72,17 @@ CLOUDFLARE_AI_WORKER_SECRET=your_shared_secret
 
 ## Локальный запуск
 
+Нужны uv и Python 3.11 или 3.12. Из корня репозитория перейдите в каталог сервиса. Подготовьте .env по разделу выше и запустите:
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd services/ml
+uv run --locked uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Uv использует pyproject.toml и uv.lock этого сервиса и создаёт отдельное окружение .venv. Запуск тестов из того же каталога:
+
+```bash
+uv run --locked --group dev pytest tests -q
 ```
 
 ## Docker Compose

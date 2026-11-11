@@ -1,0 +1,21 @@
+[project]
+name = "lectern-web"
+version = "0.1.0"
+description = "LEctern web application"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "fastapi==0.115.0",
+  "uvicorn[standard]==0.30.6",
+  "httpx==0.28.1",
+  "python-multipart==0.0.9",
+  "itsdangerous==2.2.0",
+  "openpyxl==3.1.5",
+  "python-dotenv==1.2.2",
+]
+
+[dependency-groups]
+dev = ["pytest==9.2.0", "pytest-asyncio==1.4.1.post1"]
+
+[tool.uv]
+package = false
+required-version = ">=0.13.6,<0.14"
