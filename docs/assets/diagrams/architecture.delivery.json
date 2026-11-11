@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "af223442-e060-4108-af92-7161dd7ce4bf",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/aatarasov/Projects/Lectern.worktrees/material-docs/maintenance/diagrams/architecture.json",
+  "output": "/Users/aatarasov/Projects/Lectern.worktrees/material-docs/docs/assets/diagrams/architecture.html",
+  "specification": {
+    "sha256": "662b08ba39ee148ce48a5e4e148e4fe0bff5dd9e605ec3ed9e214240df552e70",
+    "bytes": 9013
+  },
+  "artifact": {
+    "sha256": "def6fff0151b8718de14498e4a21bf4d904aeaa77a66b686d8ff81fd8717d226",
+    "bytes": 851557
+  }
+}

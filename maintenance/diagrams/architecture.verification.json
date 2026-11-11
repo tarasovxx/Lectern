@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "tool": "Archify 3.2.0",
+  "source": "maintenance/diagrams/architecture.json",
+  "artifact": "docs/assets/diagrams/architecture.html",
+  "repository": {
+    "url": "https://github.com/tarasovxx/Lectern",
+    "revision": "43b576bb2d5050e90d54bea0addbdc9fca280181"
+  },
+  "specification": {
+    "sha256": "662b08ba39ee148ce48a5e4e148e4fe0bff5dd9e605ec3ed9e214240df552e70",
+    "bytes": 9013
+  },
+  "artifactIdentity": {
+    "sha256": "def6fff0151b8718de14498e4a21bf4d904aeaa77a66b686d8ff81fd8717d226",
+    "bytes": 851557
+  },
+  "quality": "showcase",
+  "status": "pass",
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [
+    {
+      "code": "i18n/locale-fallback",
+      "severity": "warning",
+      "message": "meta.locale \"ru\" has no bundled catalog and no usable meta.translations; the Viewer chrome and <html lang> fall back to English."
+    }
+  ],
+  "browserEvidence": "passed",
+  "visualReview": "not-requested",
+  "update": {
+    "installedVersion": "3.2.0",
+    "status": "current",
+    "noticeRequired": false
+  },
+  "command": "node \"$ARCHIFY_ROOT/bin/archify.mjs\" finalize architecture maintenance/diagrams/architecture.json docs/assets/diagrams/architecture.html --repo-root . --quality showcase --out-dir /tmp/lectern-archify-check --json",
+  "fullReceipts": "Generated at --out-dir; not stored in the documentation tree."
+}

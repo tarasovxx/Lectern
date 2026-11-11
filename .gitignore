@@ -7,3 +7,6 @@
 *.pyc
 .DS_Store
 .superpowers/
+.venv-docs/
+site/
+.archify/
